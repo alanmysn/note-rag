@@ -64,6 +64,22 @@ def cmd_index(limit: int | None = None) -> None:
     print(f"建索引完成：{stats['files']} 篇笔记，{stats['blocks']} 块已入库")
 
 
+def cmd_search(query: str, limit: int | None = None) -> None:
+    from .retriever import search
+
+    result = search(query, limit=limit)
+    print(f"问题：{result['query']}")
+    if not result["found"]:
+        print("未命中：全库检索低于相似度门槛，判「没找到」")
+        return
+    print(f"命中 {len(result['hits'])} 块：")
+    for h in result["hits"]:
+        print(f"\n  [{h['score']:.2f}] {h['file']}")
+        if h["title_chain"]:
+            print(f"      标题链: {h['title_chain']}")
+        print(f"      {h['text'][:80]}…")
+
+
 def main() -> None:
     import argparse
 
@@ -75,6 +91,10 @@ def main() -> None:
     index_p = sub.add_parser("index", help="全量建索引")
     index_p.add_argument("--limit", type=int, default=None,
                          help="只索引前 N 篇（冒烟测试用）")
+    search_p = sub.add_parser("search", help="检索（不生成答案）")
+    search_p.add_argument("query", help="要检索的问题")
+    search_p.add_argument("--limit", type=int, default=None,
+                          help="覆盖 top_k 配置")
 
     args = parser.parse_args()
     if args.cmd in (None, "config"):
@@ -83,6 +103,8 @@ def main() -> None:
         cmd_stats()
     elif args.cmd == "index":
         cmd_index(args.limit)
+    elif args.cmd == "search":
+        cmd_search(args.query, args.limit)
 
 
 if __name__ == "__main__":
