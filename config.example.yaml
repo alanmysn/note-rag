@@ -16,7 +16,7 @@ chunk_overlap: 50
 
 # 检索参数
 top_k: 5
-similarity_threshold: 0.5
+similarity_threshold: 0.6
 
 # 排除的文件夹（.obsidian 为 Obsidian 配置目录）
 exclude_dirs: [.obsidian]
