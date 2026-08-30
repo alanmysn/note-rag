@@ -26,12 +26,39 @@ def cmd_config() -> None:
     print(f"  DeepSeek key  : {_api_key_status()}")
 
 
+def cmd_stats() -> None:
+    from .chunker import build_chunks
+    from .config import load_config
+
+    cfg, _, _ = load_config()
+    items = build_chunks(cfg)
+
+    total_chunks = sum(len(chunks) for _, chunks in items)
+    total_chars = sum(
+        len("".join(chunks)) for _, chunks in items
+    )
+    sizes = sorted(len("".join(c for c in chunks)) for _, chunks in items)
+    big_files = [p.name for p, chunks in items if len("".join(chunks)) > 20000]
+
+    print("note-rag 笔记统计")
+    print(f"  笔记篇数      : {len(items)}")
+    print(f"  切块总数      : {total_chunks}")
+    print(f"  内容总字数    : {total_chars:,}")
+    print(f"  平均每篇块数  : {total_chunks / len(items):.1f}")
+    print(f"  最长的笔记    : {big_files if big_files else '无'}")
+    print(f"  单块最大字数  : {max((len(c) for _, cs in items for c in cs), default=0)}")
+    print(f"  块大小超 120% 阈值的块数（硬切遗漏检查）: "
+          f"{sum(1 for _, cs in items for c in cs if len(c) > int(cfg['chunk_size']) * 1.2)}")
+
+
 def main() -> None:
     args = sys.argv[1:]
     if not args or args[0] == "config":
         cmd_config()
+    elif args[0] == "stats":
+        cmd_stats()
     else:
-        print(f"未知命令：{args[0]}（当前支持：config）")
+        print(f"未知命令：{args[0]}（当前支持：config, stats）")
         sys.exit(1)
 
 
