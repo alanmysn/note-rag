@@ -27,7 +27,7 @@ def cmd_config() -> None:
 
 
 def cmd_stats() -> None:
-    from .chunker import build_chunks
+    from .chunker import build_chunks, chunk_body_len
     from .config import load_config
 
     cfg, _, _ = load_config()
@@ -35,20 +35,27 @@ def cmd_stats() -> None:
 
     total_chunks = sum(len(chunks) for _, chunks in items)
     total_chars = sum(
-        len("".join(chunks)) for _, chunks in items
+        len(block) for _, chunks in items for _, block in chunks
     )
-    sizes = sorted(len("".join(c for c in chunks)) for _, chunks in items)
-    big_files = [p.name for p, chunks in items if len("".join(chunks)) > 20000]
+    with_chain = sum(
+        1 for _, chunks in items for chain, _ in chunks if chain
+    )
+    big_files = [
+        p.name
+        for p, chunks in items
+        if sum(len(block) for _, block in chunks) > 20000
+    ]
 
     print("note-rag 笔记统计")
     print(f"  笔记篇数      : {len(items)}")
     print(f"  切块总数      : {total_chunks}")
     print(f"  内容总字数    : {total_chars:,}")
     print(f"  平均每篇块数  : {total_chunks / len(items):.1f}")
+    print(f"  带标题链的块  : {with_chain} ({with_chain / total_chunks:.0%})")
     print(f"  最长的笔记    : {big_files if big_files else '无'}")
-    print(f"  单块最大字数  : {max((len(c) for _, cs in items for c in cs), default=0)}")
+    print(f"  单块最大字数  : {max((chunk_body_len(block) for _, cs in items for _, block in cs), default=0)}")
     print(f"  块大小超 120% 阈值的块数（硬切遗漏检查）: "
-          f"{sum(1 for _, cs in items for c in cs if len(c) > int(cfg['chunk_size']) * 1.2)}")
+          f"{sum(1 for _, cs in items for _, block in cs if chunk_body_len(block) > int(cfg['chunk_size']) * 1.2)}")
 
 
 def main() -> None:
