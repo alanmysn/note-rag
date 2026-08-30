@@ -1,0 +1,14 @@
+# 第 1 步：基础
+PyYAML
+python-dotenv
+
+# 第 3 步：向量化与索引
+chromadb
+sentence-transformers
+
+# 第 5 步：DeepSeek 调用
+openai
+
+# 第 6 步：Web 服务
+fastapi
+uvicorn

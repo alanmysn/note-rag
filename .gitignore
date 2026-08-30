@@ -1,0 +1,11 @@
+# 本地配置（含密钥与笔记库路径，绝不入库）
+.env
+config.yaml
+
+# 数据与依赖（全部收进项目内，C 盘零占用）
+.venv/
+data/
+
+# Python 缓存
+__pycache__/
+*.pyc

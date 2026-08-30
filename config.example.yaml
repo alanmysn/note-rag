@@ -1,0 +1,22 @@
+# note-rag 配置示例
+# 用法：复制本文件为 config.yaml 并填写真实值（config.yaml 已被 gitignore，不会入库）
+
+# 本地 Obsidian 笔记库路径（必填）
+vault_path: /path/to/your/obsidian/vault
+
+# 数据目录（相对项目根；索引与模型存放处，gitignore）
+data_dir: data
+
+# 向量化来源：local-bge-m3（本地）| cloud（云端 API，v2）
+embedding_provider: local-bge-m3
+
+# 切块参数（字）
+chunk_size: 500
+chunk_overlap: 50
+
+# 检索参数
+top_k: 5
+similarity_threshold: 0.5
+
+# 排除的文件夹（.obsidian 为 Obsidian 配置目录）
+exclude_dirs: [.obsidian]
