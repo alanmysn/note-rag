@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>原型 B · 检索卡</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", system-ui, sans-serif; background: #fff; color: #1d1d1f; }
+  .top { border-bottom: 1px solid #e2e2e6; padding: 20px; text-align: center; }
+  .top h1 { font-size: 22px; margin-bottom: 14px; }
+  .search { display: flex; max-width: 640px; margin: 0 auto; gap: 8px; }
+  input { flex: 1; padding: 12px 16px; border: 1px solid #d2d2d7; border-radius: 24px; font-size: 15px; outline: none; }
+  input:focus { border-color: #0a84ff; }
+  button { padding: 12px 26px; background: #0a84ff; color: #fff; border: none; border-radius: 24px; font-size: 15px; cursor: pointer; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 20px; }
+  .answer { border: 1px solid #e2e2e6; border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; }
+  .answer h2 { font-size: 13px; color: #86868b; font-weight: normal; margin-bottom: 10px; }
+  .answer p { font-size: 14px; line-height: 1.7; }
+  .answer .cite { color: #0a84ff; font-size: 12px; vertical-align: super; }
+  .answer ul { margin: 8px 0 8px 18px; font-size: 14px; line-height: 1.7; }
+  .srcs-title { font-size: 13px; color: #86868b; margin: 16px 0 8px; }
+  .src { border: 1px solid #e2e2e6; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; }
+  .src .file { font-size: 13px; font-weight: bold; color: #0a84ff; }
+  .src .meta { font-size: 11px; color: #86868b; margin-left: 8px; }
+  .src .snip { font-size: 13px; color: #3a3a3c; line-height: 1.6; margin-top: 6px; }
+  .no-result { border: 1px dashed #d2d2d7; border-radius: 12px; padding: 18px; text-align: center; color: #86868b; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>note-rag</h1>
+  <div class="search"><input value="我上次查打印机查出了什么结论？"><button>提问</button></div>
+</div>
+<main>
+  <div class="answer">
+    <h2>回答（依据 2 篇笔记）</h2>
+    <p>根据你的购物笔记，你上次（6 月）得出的结论是：<b>家用选激光打印机</b>，理由是墨仓式喷墨长期成本高、且你不常打彩色。<span class="cite">[1][2]</span></p>
+    <ul>
+      <li>激光打印机的硒鼓寿命约 1500–3000 页，单页成本约 0.1–0.2 元</li>
+      <li>你记录的备选型号是兄弟 DCP-L2550DW 与惠普 M233dw</li>
+    </ul>
+  </div>
+  <div class="srcs-title">出处（2 篇笔记）</div>
+  <div class="src">
+    <div class="file">购物清单-打印机.md<span class="meta">相似度 0.87</span></div>
+    <div class="snip">「……结论：家用激光，备选 兄弟 DCP-L2550DW / 惠普 M233dw，硒鼓寿命 1500–3000 页……」</div>
+  </div>
+  <div class="src">
+    <div class="file">2026购物笔记.md<span class="meta">相似度 0.81</span></div>
+    <div class="snip">「……6月对比：喷墨墨仓 vs 激光，不常打彩色选激光，单页成本 0.1–0.2 元……」</div>
+  </div>
+</main>
+</body>
+</html>
