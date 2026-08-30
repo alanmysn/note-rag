@@ -4,7 +4,6 @@
     python -m app.main config     # 打印当前配置
 """
 import os
-import sys
 
 
 def _api_key_status() -> str:
@@ -58,15 +57,32 @@ def cmd_stats() -> None:
           f"{sum(1 for _, cs in items for _, block in cs if chunk_body_len(block) > int(cfg['chunk_size']) * 1.2)}")
 
 
+def cmd_index(limit: int | None = None) -> None:
+    from .indexer import build_index
+
+    stats = build_index(limit=limit)
+    print(f"建索引完成：{stats['files']} 篇笔记，{stats['blocks']} 块已入库")
+
+
 def main() -> None:
-    args = sys.argv[1:]
-    if not args or args[0] == "config":
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="note-rag")
+    sub = parser.add_subparsers(dest="cmd")
+
+    sub.add_parser("config", help="打印当前配置")
+    sub.add_parser("stats", help="统计笔记与切块")
+    index_p = sub.add_parser("index", help="全量建索引")
+    index_p.add_argument("--limit", type=int, default=None,
+                         help="只索引前 N 篇（冒烟测试用）")
+
+    args = parser.parse_args()
+    if args.cmd in (None, "config"):
         cmd_config()
-    elif args[0] == "stats":
+    elif args.cmd == "stats":
         cmd_stats()
-    else:
-        print(f"未知命令：{args[0]}（当前支持：config, stats）")
-        sys.exit(1)
+    elif args.cmd == "index":
+        cmd_index(args.limit)
 
 
 if __name__ == "__main__":
