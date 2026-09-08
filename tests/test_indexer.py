@@ -1,4 +1,5 @@
 import unittest
+import uuid
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -8,6 +9,21 @@ from app.retriever import restore_hits
 
 
 class IndexContractTests(unittest.TestCase):
+    def test_real_chroma_version_update_preserves_cosine(self):
+        import chromadb
+        from chromadb.config import Settings
+
+        client = chromadb.EphemeralClient(Settings(anonymized_telemetry=False))
+        name = 'test-' + uuid.uuid4().hex
+        collection = client.create_collection(name, metadata={'hnsw:space': 'cosine'})
+        collection.add(ids=['a', 'b'], embeddings=[[2.0, 0.0], [0.0, 2.0]])
+        collection.modify(metadata={'chunk_version': CHUNK_VERSION})
+        reopened = client.get_collection(name)
+        result = reopened.query(query_embeddings=[[1.0, 0.0]], n_results=2)
+        self.assertEqual(reopened.metadata['chunk_version'], CHUNK_VERSION)
+        self.assertAlmostEqual(result['distances'][0][0], 0.0)
+        self.assertAlmostEqual(result['distances'][0][1], 1.0)
+
     def test_index_stores_full_context_but_embeds_small_chunks(self):
         original = '甲' * 1800
         chunks = chunk_text(original, file_name='note.md')
@@ -35,7 +51,7 @@ class IndexContractTests(unittest.TestCase):
         self.assertEqual(len(hits), 1)
         self.assertEqual(hits[0]['text'], original)
         collection.modify.assert_called_once_with(
-            metadata={'hnsw:space': 'cosine', 'chunk_version': CHUNK_VERSION})
+            metadata={'chunk_version': CHUNK_VERSION})
 
     def test_oversized_input_fails_without_truncation(self):
         embedder = MagicMock()

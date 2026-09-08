@@ -117,7 +117,7 @@ def build_index(limit: int | None = None) -> dict:
         embeddings=embeddings,
         metadatas=metas,
     )
-    collection.modify(metadata={"hnsw:space": "cosine", "chunk_version": CHUNK_VERSION})
+    collection.modify(metadata={"chunk_version": CHUNK_VERSION})
 
     return {"files": len(items), "blocks": n}
 
