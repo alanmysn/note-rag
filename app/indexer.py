@@ -8,7 +8,7 @@
 """
 from pathlib import Path
 
-from .chunker import build_chunks
+from .chunker import CHUNK_VERSION, build_chunks
 from .config import load_config
 
 COLLECTION_NAME = "notes"
@@ -73,10 +73,6 @@ def build_index(limit: int | None = None) -> dict:
     embedder = _get_embedder(data_dir / "models")
 
     collection = _get_collection(data_dir)
-    # 幂等：清空后重建
-    ids_in_collection = collection.get()["ids"]
-    if ids_in_collection:
-        collection.delete(ids_in_collection)
 
     total_blocks = sum(len(chunks) for _, chunks in items)
     ids: list[str] = []
@@ -84,20 +80,24 @@ def build_index(limit: int | None = None) -> dict:
     metas: list[dict] = []
     n = 0
     for rel_path, chunks in items:
-        for idx, (chain, block) in enumerate(chunks):
+        for idx, chunk in enumerate(chunks):
             file_key = rel_path.as_posix()
             ids.append(f"{file_key}#{idx}")
-            docs.append(block)
+            docs.append(chunk.text)
             metas.append(
                 {
                     "source": file_key,
-                    "title_chain": chain,
+                    "title_chain": chunk.title_chain,
                     "chunk_index": idx,
+                    "chunk_version": CHUNK_VERSION,
+                    "parent_id": chunk.parent_id,
+                    "context": chunk.context,
                 }
             )
             n += 1
 
     print(f"向量化 {n} 块（共 {len(items)} 篇笔记）…")
+    validate_embedding_lengths(embedder, docs)
     embeddings: list[list[float]] = []
     batch = 64
     for i in range(0, len(docs), batch):
@@ -107,11 +107,30 @@ def build_index(limit: int | None = None) -> dict:
         if (i // batch + 1) % 5 == 0 or i + batch >= len(docs):
             print(f"  已处理 {min(i + batch, len(docs))}/{len(docs)} 块")
 
+    # 输入容量检查及向量计算成功后才替换旧内容。
+    ids_in_collection = collection.get()["ids"]
+    if ids_in_collection:
+        collection.delete(ids_in_collection)
     collection.add(
         ids=ids,
         documents=docs,
         embeddings=embeddings,
         metadatas=metas,
     )
+    collection.modify(metadata={"hnsw:space": "cosine", "chunk_version": CHUNK_VERSION})
 
     return {"files": len(items), "blocks": n}
+
+
+def validate_embedding_lengths(embedder, documents: list[str]) -> None:
+    """包括背景和特殊 token，禁止超长表格行被编码器静默截断。"""
+    maximum = embedder.max_seq_length
+    for start in range(0, len(documents), 64):
+        encoded = embedder.tokenizer(documents[start:start + 64], truncation=False,
+                                     padding=False, add_special_tokens=True)
+        for offset, tokens in enumerate(encoded["input_ids"]):
+            if len(tokens) > maximum:
+                raise ValueError(
+                    f"第 {start + offset + 1} 个块含 {len(tokens)} tokens，"
+                    f"超过向量模型容量 {maximum}；请调整切块，未替换旧索引。"
+                )

@@ -8,18 +8,47 @@
 """
 from pathlib import Path
 
+from .chunker import CHUNK_VERSION
 from .config import load_config
 from .indexer import COLLECTION_NAME, _cuda_available, _get_embedder
 
 
 def _get_retriever_components(cfg: dict, data_dir: Path):
     """返回 (embedder, collection)。embedder 复用建索引时的加载逻辑。"""
-    embedder = _get_embedder(data_dir / "models")
     import chromadb
 
     client = chromadb.PersistentClient(path=str(data_dir / "chroma"))
     collection = client.get_collection(COLLECTION_NAME)
+    if (collection.metadata or {}).get("chunk_version") != CHUNK_VERSION:
+        raise ValueError("索引仍为旧切块版本，请确认后重建索引再检索。")
+    embedder = _get_embedder(data_dir / "models")
     return embedder, collection
+
+
+def restore_hits(results: dict, threshold: float) -> list[dict]:
+    """过门槛的小块恢复完整原始单元；同文件、同单元只返回一次。"""
+    grouped = {}
+    for doc, meta, dist in zip(results["documents"][0], results["metadatas"][0],
+                               results["distances"][0]):
+        if meta.get("chunk_version") != CHUNK_VERSION:
+            raise ValueError("索引缺少完整上下文，请确认后重建索引。")
+        score = 1 - dist
+        if score < threshold:
+            continue
+        key = (meta["source"], meta["parent_id"])
+        if key not in grouped:
+            grouped[key] = {
+                "file": meta["source"], "title_chain": meta["title_chain"],
+                "text": meta["context"], "score": score,
+                "parent_id": meta["parent_id"], "matched_chunks": [doc],
+            }
+        else:
+            grouped[key]["score"] = max(grouped[key]["score"], score)
+            grouped[key]["matched_chunks"].append(doc)
+    hits = sorted(grouped.values(), key=lambda h: h["score"], reverse=True)
+    for hit in hits:
+        hit["score"] = round(hit["score"], 3)
+    return hits
 
 
 def search(query: str, limit: int | None = None) -> dict:
@@ -44,22 +73,6 @@ def search(query: str, limit: int | None = None) -> dict:
         include=["documents", "metadatas", "distances"],
     )
 
-    hits = []
-    for doc, meta, dist in zip(
-        results["documents"][0],
-        results["metadatas"][0],
-        results["distances"][0],
-    ):
-        score = 1 - dist  # Chroma 余弦距离 → 相似度
-        if score < threshold:
-            continue
-        hits.append(
-            {
-                "file": meta["source"],
-                "title_chain": meta.get("title_chain", ""),
-                "text": doc,
-                "score": round(score, 3),
-            }
-        )
+    hits = restore_hits(results, threshold)
 
     return {"query": query, "hits": hits, "found": bool(hits)}

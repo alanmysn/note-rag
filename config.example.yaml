@@ -10,9 +10,9 @@ data_dir: data
 # 向量化来源：local-bge-m3（本地）| cloud（云端 API，v2）
 embedding_provider: local-bge-m3
 
-# 切块参数（字）
+# 切块参数（正文字符数；文件名、标题链另计）
 chunk_size: 500
-chunk_overlap: 50
+chunk_max_size: 800
 
 # 检索参数
 top_k: 5
